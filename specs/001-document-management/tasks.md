@@ -28,9 +28,9 @@ Data, Pages, Shared, Controllers). File bytes are stored at runtime under `AppDa
 
 **Purpose**: Project structure and configuration for the feature
 
-- [ ] T001 Create the `ContosoDashboard/Services/Storage/` and `ContosoDashboard/Controllers/` folders for the new storage abstractions and the file-serving controller
-- [ ] T002 [P] Add a `DocumentStorage` configuration section (RootPath = `AppData/uploads`, MaxFileSizeBytes = 26214400, AllowedExtensions, AllowedContentTypes) to `ContosoDashboard/appsettings.json` and `ContosoDashboard/appsettings.Development.json`
-- [ ] T003 [P] Add `AppData/uploads/` to `.gitignore` at the repository root so uploaded files are not committed
+- [X] T001 Create the `ContosoDashboard/Services/Storage/` and `ContosoDashboard/Controllers/` folders for the new storage abstractions and the file-serving controller
+- [X] T002 [P] Add a `DocumentStorage` configuration section (RootPath = `AppData/uploads`, MaxFileSizeBytes = 26214400, AllowedExtensions, AllowedContentTypes) to `ContosoDashboard/appsettings.json` and `ContosoDashboard/appsettings.Development.json`
+- [X] T003 [P] Add `AppData/uploads/` to `.gitignore` at the repository root so uploaded files are not committed
 
 ---
 
