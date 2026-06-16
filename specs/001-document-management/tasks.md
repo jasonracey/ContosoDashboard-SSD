@@ -40,18 +40,18 @@ Data, Pages, Shared, Controllers). File bytes are stored at runtime under `AppDa
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T004 [P] Create the `Document` entity (int `DocumentId`, Title, Description, Category text, Tags, FileName, FileType[255], FileSizeBytes, FilePath, UploadedByUserId, ProjectId?, TaskId?, UploadedDate, UpdatedDate) per data-model.md in `ContosoDashboard/Models/Document.cs`
-- [ ] T005 [P] Create the `DocumentShare` entity (DocumentShareId, DocumentId, SharedWithUserId?, SharedWithTeam?, SharedByUserId, SharedDate) per data-model.md in `ContosoDashboard/Models/DocumentShare.cs`
-- [ ] T006 [P] Create the `DocumentActivityLog` entity (DocumentActivityLogId, DocumentId?, Action, PerformedByUserId, Timestamp, Details?) per data-model.md in `ContosoDashboard/Models/DocumentActivityLog.cs`
-- [ ] T007 Add navigation collections (`Documents`) to `ContosoDashboard/Models/User.cs`, `ContosoDashboard/Models/Project.cs`, and `ContosoDashboard/Models/TaskItem.cs` (depends on T004)
-- [ ] T008 Register `DbSet<Document>`, `DbSet<DocumentShare>`, `DbSet<DocumentActivityLog>` and configure relationships, delete behaviors, and indexes (incl. unique index on `Document.FilePath`) in `OnModelCreating` of `ContosoDashboard/Data/ApplicationDbContext.cs` (depends on T004, T005, T006, T007)
-- [ ] T009 [P] Define the `IFileStorageService` interface (`UploadAsync`, `DownloadAsync`, `DeleteAsync`, `GetUrlAsync`) per contracts/IFileStorageService.md in `ContosoDashboard/Services/Storage/IFileStorageService.cs`
-- [ ] T010 [P] Define the `IMalwareScanner` interface and `ScanResult` record per contracts/IMalwareScanner.md in `ContosoDashboard/Services/Storage/IMalwareScanner.cs`
-- [ ] T011 Implement `LocalFileStorageService` (GUID path `{userId}/{projectId|"personal"}/{guid}.{ext}` under the configured root outside `wwwroot`, ensures root exists, `GetUrlAsync` returns the controller route) in `ContosoDashboard/Services/Storage/LocalFileStorageService.cs` (depends on T009)
-- [ ] T012 [P] Implement `StubMalwareScanner` (returns clean for allowed files; documented training stand-in) in `ContosoDashboard/Services/Storage/StubMalwareScanner.cs` (depends on T010)
-- [ ] T013 Define the `IDocumentService` interface and DTOs (`DocumentUploadRequest`, `DocumentListFilter`, `DocumentMetadataUpdate`, `DocumentReport`) per contracts/IDocumentService.md in `ContosoDashboard/Services/IDocumentService.cs`
-- [ ] T014 Create the `DocumentService` skeleton with shared helpers — the fixed Category list, extension/size validation, the permission-scoped accessible-document query (own ∪ project ∪ shared/team ∪ elevated role), and an activity-log writer — in `ContosoDashboard/Services/DocumentService.cs` (depends on T008, T013)
-- [ ] T015 Register `IFileStorageService`, `IMalwareScanner`, and `IDocumentService` in DI, ensure the upload root is created at startup, and add `app.MapControllers()` to the pipeline in `ContosoDashboard/Program.cs` (depends on T011, T012, T014)
+- [X] T004 [P] Create the `Document` entity (int `DocumentId`, Title, Description, Category text, Tags, FileName, FileType[255], FileSizeBytes, FilePath, UploadedByUserId, ProjectId?, TaskId?, UploadedDate, UpdatedDate) per data-model.md in `ContosoDashboard/Models/Document.cs`
+- [X] T005 [P] Create the `DocumentShare` entity (DocumentShareId, DocumentId, SharedWithUserId?, SharedWithTeam?, SharedByUserId, SharedDate) per data-model.md in `ContosoDashboard/Models/DocumentShare.cs`
+- [X] T006 [P] Create the `DocumentActivityLog` entity (DocumentActivityLogId, DocumentId?, Action, PerformedByUserId, Timestamp, Details?) per data-model.md in `ContosoDashboard/Models/DocumentActivityLog.cs`
+- [X] T007 Add navigation collections (`Documents`) to `ContosoDashboard/Models/User.cs`, `ContosoDashboard/Models/Project.cs`, and `ContosoDashboard/Models/TaskItem.cs` (depends on T004)
+- [X] T008 Register `DbSet<Document>`, `DbSet<DocumentShare>`, `DbSet<DocumentActivityLog>` and configure relationships, delete behaviors, and indexes (incl. unique index on `Document.FilePath`) in `OnModelCreating` of `ContosoDashboard/Data/ApplicationDbContext.cs` (depends on T004, T005, T006, T007)
+- [X] T009 [P] Define the `IFileStorageService` interface (`UploadAsync`, `DownloadAsync`, `DeleteAsync`, `GetUrlAsync`) per contracts/IFileStorageService.md in `ContosoDashboard/Services/Storage/IFileStorageService.cs`
+- [X] T010 [P] Define the `IMalwareScanner` interface and `ScanResult` record per contracts/IMalwareScanner.md in `ContosoDashboard/Services/Storage/IMalwareScanner.cs`
+- [X] T011 Implement `LocalFileStorageService` (GUID path `{userId}/{projectId|"personal"}/{guid}.{ext}` under the configured root outside `wwwroot`, ensures root exists, `GetUrlAsync` returns the controller route) in `ContosoDashboard/Services/Storage/LocalFileStorageService.cs` (depends on T009)
+- [X] T012 [P] Implement `StubMalwareScanner` (returns clean for allowed files; documented training stand-in) in `ContosoDashboard/Services/Storage/StubMalwareScanner.cs` (depends on T010)
+- [X] T013 Define the `IDocumentService` interface and DTOs (`DocumentUploadRequest`, `DocumentListFilter`, `DocumentMetadataUpdate`, `DocumentReport`) per contracts/IDocumentService.md in `ContosoDashboard/Services/IDocumentService.cs`
+- [X] T014 Create the `DocumentService` skeleton with shared helpers — the fixed Category list, extension/size validation, the permission-scoped accessible-document query (own ∪ project ∪ shared/team ∪ elevated role), and an activity-log writer — in `ContosoDashboard/Services/DocumentService.cs` (depends on T008, T013)
+- [X] T015 Register `IFileStorageService`, `IMalwareScanner`, and `IDocumentService` in DI, ensure the upload root is created at startup, and add `app.MapControllers()` to the pipeline in `ContosoDashboard/Program.cs` (depends on T011, T012, T014)
 
 **Checkpoint**: Foundation ready — user story implementation can now begin
 

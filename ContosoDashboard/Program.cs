@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ContosoDashboard.Data;
 using ContosoDashboard.Services;
+using ContosoDashboard.Services.Storage;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 
@@ -8,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
+builder.Services.AddControllers();
 builder.Services.AddServerSideBlazor();
 
 // Add authentication state provider for Blazor
@@ -44,6 +46,13 @@ builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 
+// Configure document storage and register document services
+builder.Services.Configure<DocumentStorageOptions>(
+    builder.Configuration.GetSection(DocumentStorageOptions.SectionName));
+builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
+builder.Services.AddScoped<IMalwareScanner, StubMalwareScanner>();
+builder.Services.AddScoped<IDocumentService, DocumentService>();
+
 // Add HttpContextAccessor for accessing user claims
 builder.Services.AddHttpContextAccessor();
 
@@ -57,6 +66,14 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
         context.Database.EnsureCreated(); // For development - use migrations in production
+
+        // Ensure the document upload root exists (outside wwwroot).
+        var storageOptions = services.GetRequiredService<Microsoft.Extensions.Options.IOptions<DocumentStorageOptions>>().Value;
+        var env = services.GetRequiredService<IHostEnvironment>();
+        var uploadRoot = Path.IsPathRooted(storageOptions.RootPath)
+            ? storageOptions.RootPath
+            : Path.Combine(env.ContentRootPath, storageOptions.RootPath);
+        Directory.CreateDirectory(uploadRoot);
     }
     catch (Exception ex)
     {
@@ -106,6 +123,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapBlazorHub();
+app.MapControllers();
 app.MapFallbackToPage("/_Host");
 
 app.Run();
