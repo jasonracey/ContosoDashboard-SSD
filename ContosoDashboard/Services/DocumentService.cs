@@ -260,24 +260,91 @@ public class DocumentService : IDocumentService
 
     public async Task<IReadOnlyList<Document>> GetMyDocumentsAsync(int requestingUserId, DocumentListFilter filter)
     {
-        // Base listing of the user's own uploads. Sorting/filtering is extended in User Story 2.
-        var documents = await _context.Documents
+        var query = _context.Documents
             .Include(d => d.Project)
-            .Where(d => d.UploadedByUserId == requestingUserId)
-            .OrderByDescending(d => d.UploadedDate)
-            .ToListAsync();
+            .Where(d => d.UploadedByUserId == requestingUserId);
 
-        return documents;
+        // Filtering
+        if (!string.IsNullOrWhiteSpace(filter.Category))
+        {
+            query = query.Where(d => d.Category == filter.Category);
+        }
+        if (filter.ProjectId.HasValue)
+        {
+            query = query.Where(d => d.ProjectId == filter.ProjectId.Value);
+        }
+        if (filter.FromDate.HasValue)
+        {
+            query = query.Where(d => d.UploadedDate >= filter.FromDate.Value);
+        }
+        if (filter.ToDate.HasValue)
+        {
+            // Inclusive of the whole "to" day.
+            var toExclusive = filter.ToDate.Value.Date.AddDays(1);
+            query = query.Where(d => d.UploadedDate < toExclusive);
+        }
+
+        // Sorting
+        query = (filter.SortBy?.ToLowerInvariant()) switch
+        {
+            "title" => filter.SortDescending ? query.OrderByDescending(d => d.Title) : query.OrderBy(d => d.Title),
+            "category" => filter.SortDescending ? query.OrderByDescending(d => d.Category) : query.OrderBy(d => d.Category),
+            "filesize" => filter.SortDescending ? query.OrderByDescending(d => d.FileSizeBytes) : query.OrderBy(d => d.FileSizeBytes),
+            "uploaddate" => filter.SortDescending ? query.OrderByDescending(d => d.UploadedDate) : query.OrderBy(d => d.UploadedDate),
+            _ => query.OrderByDescending(d => d.UploadedDate)
+        };
+
+        return await query.ToListAsync();
     }
 
-    public Task<IReadOnlyList<Document>> GetProjectDocumentsAsync(int projectId, int requestingUserId)
-        => throw new NotImplementedException("Implemented in User Story 2.");
+    public async Task<IReadOnlyList<Document>> GetProjectDocumentsAsync(int projectId, int requestingUserId)
+    {
+        var user = await _context.Users.FindAsync(requestingUserId);
+        if (user is null)
+        {
+            return Array.Empty<Document>();
+        }
+
+        // Project members, the project manager, and administrators may view project documents.
+        var authorized = user.Role == UserRole.Administrator
+            || await IsProjectMemberOrManagerAsync(projectId, requestingUserId);
+        if (!authorized)
+        {
+            return Array.Empty<Document>();
+        }
+
+        return await _context.Documents
+            .Include(d => d.Project)
+            .Include(d => d.UploadedByUser)
+            .Where(d => d.ProjectId == projectId)
+            .OrderByDescending(d => d.UploadedDate)
+            .ToListAsync();
+    }
 
     public Task<IReadOnlyList<Document>> GetSharedWithMeAsync(int requestingUserId)
         => throw new NotImplementedException("Implemented in User Story 4.");
 
-    public Task<IReadOnlyList<Document>> SearchAsync(string query, int requestingUserId)
-        => throw new NotImplementedException("Implemented in User Story 2.");
+    public async Task<IReadOnlyList<Document>> SearchAsync(string query, int requestingUserId)
+    {
+        IQueryable<Document> accessible = (await GetAccessibleDocumentsAsync(requestingUserId))
+            .Include(d => d.Project)
+            .Include(d => d.UploadedByUser);
+
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            var term = $"%{query.Trim()}%";
+            accessible = accessible.Where(d =>
+                EF.Functions.Like(d.Title, term)
+                || (d.Description != null && EF.Functions.Like(d.Description, term))
+                || (d.Tags != null && EF.Functions.Like(d.Tags, term))
+                || EF.Functions.Like(d.UploadedByUser.DisplayName, term)
+                || (d.Project != null && EF.Functions.Like(d.Project.Name, term)));
+        }
+
+        return await accessible
+            .OrderByDescending(d => d.UploadedDate)
+            .ToListAsync();
+    }
 
     public Task<(Document Document, Stream Content)?> OpenForDownloadAsync(int documentId, int requestingUserId)
         => throw new NotImplementedException("Implemented in User Story 3.");

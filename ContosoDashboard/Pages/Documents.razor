@@ -126,13 +126,84 @@
         </div>
     }
 
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label mb-0">Search</label>
+                    <div class="input-group">
+                        <input class="form-control" placeholder="Title, description, tag, uploader, project"
+                               @bind="searchTerm" @bind:event="oninput" @onkeyup="OnSearchKeyUp" />
+                        <button class="btn btn-outline-primary" @onclick="RunSearch">Search</button>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label mb-0">Category</label>
+                    <select class="form-select" @bind="filterCategory">
+                        <option value="">All</option>
+                        @foreach (var c in DocumentCategories.All)
+                        {
+                            <option value="@c">@c</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label mb-0">Project</label>
+                    <select class="form-select" @bind="filterProjectIdRaw">
+                        <option value="">All</option>
+                        @if (projects is not null)
+                        {
+                            @foreach (var p in projects)
+                            {
+                                <option value="@p.ProjectId">@p.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label mb-0">From</label>
+                    <input type="date" class="form-control" max="@todayString" @bind="fromDate" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label mb-0">To</label>
+                    <input type="date" class="form-control" max="@todayString" @bind="toDate" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label mb-0">Sort by</label>
+                    <select class="form-select" @bind="sortBy">
+                        <option value="uploadDate">Upload date</option>
+                        <option value="title">Title</option>
+                        <option value="category">Category</option>
+                        <option value="fileSize">File size</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label mb-0">Order</label>
+                    <select class="form-select" @bind="sortOrder">
+                        <option value="asc">Ascending</option>
+                        <option value="desc">Descending</option>
+                    </select>
+                </div>
+                <div class="col-md-6 d-flex gap-2">
+                    <button class="btn btn-primary" @onclick="ApplyFilters">Apply filters</button>
+                    <button class="btn btn-secondary" @onclick="ClearFilters">Clear</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (searchMode && !string.IsNullOrWhiteSpace(searchTerm))
+    {
+        <p class="text-muted">Showing search results for "<strong>@searchTerm</strong>" across all documents you can access.</p>
+    }
+
     @if (documents is null)
     {
         <p><em>Loading...</em></p>
     }
     else if (!documents.Any())
     {
-        <div class="alert alert-info">You haven't uploaded any documents yet.</div>
+        <div class="alert alert-info">@EmptyMessage</div>
     }
     else
     {
@@ -143,6 +214,7 @@
                         <th>Title</th>
                         <th>Category</th>
                         <th>Project</th>
+                        <th>Uploaded By</th>
                         <th>Uploaded</th>
                         <th>Size</th>
                     </tr>
@@ -154,6 +226,7 @@
                             <td>@doc.Title</td>
                             <td><span class="badge bg-secondary">@doc.Category</span></td>
                             <td>@(doc.Project?.Name ?? "—")</td>
+                            <td>@(doc.UploadedByUser?.DisplayName ?? "You")</td>
                             <td>@doc.UploadedDate.ToString("MMM dd, yyyy HH:mm")</td>
                             <td>@FormatSize(doc.FileSizeBytes)</td>
                         </tr>
@@ -188,6 +261,28 @@
     private string? statusMessage;
     private string statusCss = "alert-info";
 
+    // Filter/search state (User Story 2)
+    private string? searchTerm;
+    private bool searchMode;
+    private string? filterCategory;
+    private string? filterProjectIdRaw;
+    private DateTime? fromDate;
+    private DateTime? toDate;
+    private string sortBy = "uploadDate";
+    private string sortOrder = "desc";
+    private bool sortDescending => sortOrder == "desc";
+
+    private readonly string todayString = DateTime.Today.ToString("yyyy-MM-dd");
+
+    private int? filterProjectId => int.TryParse(filterProjectIdRaw, out var id) ? id : null;
+
+    private string EmptyMessage => searchMode
+        ? "No documents match your search."
+        : (HasActiveFilters ? "No documents match the selected filters." : "You haven't uploaded any documents yet.");
+
+    private bool HasActiveFilters =>
+        !string.IsNullOrWhiteSpace(filterCategory) || filterProjectId.HasValue || fromDate.HasValue || toDate.HasValue;
+
     private int? projectId
     {
         get => int.TryParse(projectIdRaw, out var id) ? id : null;
@@ -215,7 +310,59 @@
 
     private async Task LoadDocumentsAsync()
     {
-        documents = (await DocumentService.GetMyDocumentsAsync(currentUserId, new DocumentListFilter())).ToList();
+        if (searchMode && !string.IsNullOrWhiteSpace(searchTerm))
+        {
+            documents = (await DocumentService.SearchAsync(searchTerm, currentUserId)).ToList();
+        }
+        else
+        {
+            var filter = new DocumentListFilter(filterCategory, filterProjectId, fromDate, toDate, sortBy, sortDescending);
+            documents = (await DocumentService.GetMyDocumentsAsync(currentUserId, filter)).ToList();
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        // Upload dates can never be in the future; clamp any future selection to today.
+        if (fromDate > DateTime.Today) fromDate = DateTime.Today;
+        if (toDate > DateTime.Today) toDate = DateTime.Today;
+
+        searchMode = false;
+        await LoadDocumentsAsync();
+    }
+
+    private async Task RunSearch()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            searchMode = false;
+        }
+        else
+        {
+            searchMode = true;
+        }
+        await LoadDocumentsAsync();
+    }
+
+    private async Task OnSearchKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await RunSearch();
+        }
+    }
+
+    private async Task ClearFilters()
+    {
+        searchTerm = null;
+        searchMode = false;
+        filterCategory = null;
+        filterProjectIdRaw = null;
+        fromDate = null;
+        toDate = null;
+        sortBy = "uploadDate";
+        sortOrder = "desc";
+        await LoadDocumentsAsync();
     }
 
     private void ToggleUploadPanel()

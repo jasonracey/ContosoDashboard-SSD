@@ -143,8 +143,8 @@ Documents connect to existing workflows: users attach and upload documents from 
 **Browsing, Search & Filtering**
 
 - **FR-014**: Users MUST be able to view a list of all documents they have uploaded ("My Documents"), showing title, category, upload date, file size, and associated project.
-- **FR-015**: Users MUST be able to sort their document list by title, upload date, category, or file size.
-- **FR-016**: Users MUST be able to filter their document list by category, associated project, and date range.
+- **FR-015**: Users MUST be able to sort their document list by title, upload date, category, or file size, in ascending or descending order (the order options MUST list ascending before descending).
+- **FR-016**: Users MUST be able to filter their document list by category, associated project, and date range. The upload-date filter MUST NOT allow selecting a future date (since documents cannot have a future upload date).
 - **FR-017**: Users MUST be able to view all documents associated with a specific project, and all members of that project MUST be able to view and download those documents.
 - **FR-018**: Users MUST be able to search documents by title, description, tags, uploader name, and associated project. Search MUST span all documents the user is permitted to access (their own uploads, documents of projects they belong to, and documents shared with them), and MUST exclude any document the user has no permission to access.
 
