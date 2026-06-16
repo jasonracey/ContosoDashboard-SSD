@@ -21,17 +21,6 @@ public class DocumentService : IDocumentService
     private readonly DocumentStorageOptions _options;
     private readonly ILogger<DocumentService> _logger;
 
-    /// <summary>The fixed, predefined document categories presented in the UI and validated on write.</summary>
-    public static readonly IReadOnlyList<string> Categories = new[]
-    {
-        "Project Documents",
-        "Team Resources",
-        "Personal Files",
-        "Reports",
-        "Presentations",
-        "Other"
-    };
-
     public DocumentService(
         ApplicationDbContext context,
         IFileStorageService fileStorage,
@@ -84,7 +73,7 @@ public class DocumentService : IDocumentService
     }
 
     /// <summary>Returns true when the category is one of the predefined values.</summary>
-    protected static bool IsValidCategory(string category) => Categories.Contains(category);
+    protected static bool IsValidCategory(string category) => DocumentCategories.All.Contains(category);
 
     /// <summary>
     /// Builds the permission-scoped set of documents a user may access:
@@ -172,13 +161,114 @@ public class DocumentService : IDocumentService
         await _context.SaveChangesAsync();
     }
 
+    /// <summary>True when the user manages or is a member of the given project.</summary>
+    protected async Task<bool> IsProjectMemberOrManagerAsync(int projectId, int userId)
+    {
+        var isManager = await _context.Projects
+            .AnyAsync(p => p.ProjectId == projectId && p.ProjectManagerId == userId);
+        if (isManager)
+        {
+            return true;
+        }
+
+        return await _context.ProjectMembers
+            .AnyAsync(pm => pm.ProjectId == projectId && pm.UserId == userId);
+    }
+
     // ---- Story operations (implemented in their feature phases) -------------------------
 
-    public Task<Document> UploadAsync(DocumentUploadRequest request, int requestingUserId)
-        => throw new NotImplementedException("Implemented in User Story 1.");
+    public async Task<Document> UploadAsync(DocumentUploadRequest request, int requestingUserId)
+    {
+        if (string.IsNullOrWhiteSpace(request.Title))
+        {
+            throw new ArgumentException("A document title is required.");
+        }
 
-    public Task<IReadOnlyList<Document>> GetMyDocumentsAsync(int requestingUserId, DocumentListFilter filter)
-        => throw new NotImplementedException("Implemented in User Story 1/2.");
+        if (!IsValidCategory(request.Category))
+        {
+            throw new ArgumentException("A valid category is required.");
+        }
+
+        // Validate the file against size limit and extension/MIME whitelist.
+        var validationError = ValidateFile(request.FileName, request.ContentType, request.FileSizeBytes);
+        if (validationError is not null)
+        {
+            throw new InvalidOperationException(validationError);
+        }
+
+        // Authorize project membership when uploading to a project.
+        if (request.ProjectId.HasValue &&
+            !await IsProjectMemberOrManagerAsync(request.ProjectId.Value, requestingUserId))
+        {
+            throw new UnauthorizedAccessException("You are not a member of the selected project.");
+        }
+
+        // Scan before storage; reject (and persist nothing) if not clean.
+        if (request.Content.CanSeek)
+        {
+            request.Content.Position = 0;
+        }
+        var scan = await _malwareScanner.ScanAsync(request.Content, request.FileName);
+        if (!scan.IsClean)
+        {
+            throw new InvalidOperationException(
+                scan.Threat is null ? "The file failed the malware scan." : $"The file failed the malware scan: {scan.Threat}");
+        }
+        if (request.Content.CanSeek)
+        {
+            request.Content.Position = 0;
+        }
+
+        // Generate a unique GUID-based path and write the file BEFORE inserting the row.
+        var filePath = await _fileStorage.UploadAsync(
+            request.Content, request.FileName, request.ContentType, requestingUserId, request.ProjectId);
+
+        var document = new Document
+        {
+            Title = request.Title.Trim(),
+            Description = request.Description,
+            Category = request.Category,
+            Tags = request.Tags,
+            FileName = request.FileName,
+            FileType = request.ContentType,
+            FileSizeBytes = request.FileSizeBytes,
+            FilePath = filePath,
+            UploadedByUserId = requestingUserId,
+            ProjectId = request.ProjectId,
+            TaskId = request.TaskId,
+            UploadedDate = DateTime.UtcNow,
+            UpdatedDate = DateTime.UtcNow
+        };
+
+        try
+        {
+            _context.Documents.Add(document);
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            // Roll back the stored file so no orphan remains if the metadata insert fails.
+            _logger.LogError(ex, "Failed to persist document metadata; rolling back stored file {FilePath}.", filePath);
+            await _fileStorage.DeleteAsync(filePath);
+            throw;
+        }
+
+        await LogActivityAsync(document.DocumentId, "Upload", requestingUserId, document.FileName);
+
+        return document;
+    }
+
+    public async Task<IReadOnlyList<Document>> GetMyDocumentsAsync(int requestingUserId, DocumentListFilter filter)
+    {
+        // Base listing of the user's own uploads. Sorting/filtering is extended in User Story 2.
+        var documents = await _context.Documents
+            .Include(d => d.Project)
+            .Where(d => d.UploadedByUserId == requestingUserId)
+            .OrderByDescending(d => d.UploadedDate)
+            .ToListAsync();
+
+        return documents;
+    }
 
     public Task<IReadOnlyList<Document>> GetProjectDocumentsAsync(int projectId, int requestingUserId)
         => throw new NotImplementedException("Implemented in User Story 2.");

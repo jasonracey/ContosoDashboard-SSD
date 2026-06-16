@@ -2,6 +2,20 @@ using ContosoDashboard.Models;
 
 namespace ContosoDashboard.Services;
 
+/// <summary>The fixed, predefined document categories presented in the UI and validated on write.</summary>
+public static class DocumentCategories
+{
+    public static readonly IReadOnlyList<string> All = new[]
+    {
+        "Project Documents",
+        "Team Resources",
+        "Personal Files",
+        "Reports",
+        "Presentations",
+        "Other"
+    };
+}
+
 /// <summary>Request to upload a single document. The caller copies the file into a seekable stream.</summary>
 public sealed record DocumentUploadRequest(
     string Title,

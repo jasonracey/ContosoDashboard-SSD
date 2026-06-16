@@ -29,9 +29,12 @@ An employee uploads a work document, gives it a title and category, optionally a
 
 1. **Given** a logged-in employee on the documents page, **When** they select a supported file (≤25 MB), enter a title, choose a category, and submit, **Then** the document is stored securely and appears in their "My Documents" list with captured metadata (title, category, upload date, uploader, file size, file type).
 2. **Given** an upload in progress, **When** the file is transferring, **Then** the user sees a progress indicator and, on completion, a clear success or error message.
-3. **Given** a user selects a file that is too large or of an unsupported type, **When** they attempt to upload, **Then** the system rejects it with a clear, specific error message and does not store the file.
+3. **Given** a user selects a file that is too large or of an unsupported type, **When** the file is selected, **Then** the system rejects it immediately with a clear, specific error message — before the user fills out or submits the rest of the form — and does not store the file.
 4. **Given** a user is uploading a document, **When** they associate it with a project they are a member of and add custom tags, **Then** the document is linked to that project and the tags are saved for later search.
 5. **Given** a user selects multiple supported files in a single upload, **When** they choose a shared category, project, and tags and submit, **Then** each file becomes its own document with its title defaulted to the filename and the shared category, project, and tags applied to all of them.
+6. **Given** a user opens the file chooser to add documents, **When** the chooser is displayed, **Then** it is pre-filtered to present the supported file types by default.
+7. **Given** an error message is shown on the upload form, **When** the user cancels the upload, **Then** the form is dismissed and the error message is cleared.
+8. **Given** any message banner is shown on the documents page, **When** the user clicks "Upload Document" to open the upload form, **Then** the existing message banner is cleared.
 
 ---
 
@@ -123,6 +126,7 @@ Documents connect to existing workflows: users attach and upload documents from 
 - **FR-002**: System MUST accept only the following file types: PDF, Microsoft Word, Excel, PowerPoint, plain text, JPEG, and PNG.
 - **FR-003**: System MUST reject any file larger than 25 MB per file with a clear error message.
 - **FR-004**: System MUST display an upload progress indicator and a success or error message on completion.
+- **FR-004a**: System MUST present the file chooser pre-filtered to the supported file types, and MUST reject an unsupported or oversized selection immediately when the file is selected — before the user completes or submits the rest of the upload form — with a clear, specific message. (Selection-time filtering is a convenience; the system MUST still enforce type and size rules server-side on submission.)
 - **FR-005**: Users MUST provide a document title (required) and category (required, chosen from: Project Documents, Team Resources, Personal Files, Reports, Presentations, Other) when uploading. For a multi-file upload, each document's title MUST default to its filename (editable), while the chosen category, associated project, and tags apply to every document in the batch.
 - **FR-006**: Users MUST be able to optionally add a description, associate the document with a project, and add custom tags.
 - **FR-007**: System MUST automatically capture and store upload date/time, uploader name, file size, and file type for each document.

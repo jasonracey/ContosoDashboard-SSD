@@ -65,10 +65,10 @@ Data, Pages, Shared, Controllers). File bytes are stored at runtime under `AppDa
 
 ### Implementation for User Story 1
 
-- [ ] T016 [US1] Implement `DocumentService.UploadAsync` following validate → scan → authorize (project membership for project uploads) → write file via `IFileStorageService` → insert metadata row → log `Upload`, with rollback (delete file) on persistence failure, in `ContosoDashboard/Services/DocumentService.cs`
-- [ ] T017 [US1] Implement `DocumentService.GetMyDocumentsAsync` returning the requesting user's own uploads with title, category, upload date, file size, and associated project, in `ContosoDashboard/Services/DocumentService.cs`
-- [ ] T018 [US1] Create the `Documents.razor` page with an upload modal — `InputFile` (with `@key`), multi-file selection, MemoryStream copy pattern, shared category/project/tags, per-file title defaulting to filename, progress indicator, and success/error messages — plus a "My Documents" table, in `ContosoDashboard/Pages/Documents.razor`
-- [ ] T019 [US1] Add an `[Authorize]` "Documents" navigation entry pointing to `/documents` in `ContosoDashboard/Shared/NavMenu.razor`
+- [X] T016 [US1] Implement `DocumentService.UploadAsync` following validate → scan → authorize (project membership for project uploads) → write file via `IFileStorageService` → insert metadata row → log `Upload`, with rollback (delete file) on persistence failure, in `ContosoDashboard/Services/DocumentService.cs`
+- [X] T017 [US1] Implement `DocumentService.GetMyDocumentsAsync` returning the requesting user's own uploads with title, category, upload date, file size, and associated project, in `ContosoDashboard/Services/DocumentService.cs`
+- [X] T018 [US1] Create the `Documents.razor` page with an upload modal — `InputFile` (with `@key`), multi-file selection, file picker pre-filtered to supported types via the `accept` attribute, immediate selection-time rejection of unsupported/oversized files (before form submission, using the configured allowed extensions), MemoryStream copy pattern, shared category/project/tags, per-file title defaulting to filename, progress indicator, success/error messages, and a Cancel action that dismisses the form and clears any error banner (while a successful upload keeps its confirmation message); opening the upload form via "Upload Document" also clears any existing message banner — plus a "My Documents" table, in `ContosoDashboard/Pages/Documents.razor`
+- [X] T019 [US1] Add an `[Authorize]` "Documents" navigation entry pointing to `/documents` in `ContosoDashboard/Shared/NavMenu.razor`
 
 **Checkpoint**: Upload + list works end-to-end — MVP is demonstrable and independently testable
 

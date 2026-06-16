@@ -1,0 +1,390 @@
+@page "/documents"
+@using ContosoDashboard.Services
+@using ContosoDashboard.Services.Storage
+@using ContosoDashboard.Models
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.Extensions.Options
+@using System.Security.Claims
+@attribute [Authorize]
+@inject IDocumentService DocumentService
+@inject IProjectService ProjectService
+@inject IOptions<DocumentStorageOptions> StorageOptions
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>My Documents - ContosoDashboard</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4 align-items-center">
+        <div class="col">
+            <h1>My Documents</h1>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-primary" @onclick="ToggleUploadPanel">
+                <span class="bi bi-upload" aria-hidden="true"></span> Upload Document
+            </button>
+        </div>
+    </div>
+
+    @if (statusMessage is not null)
+    {
+        <div class="alert @statusCss alert-dismissible" role="alert">
+            @statusMessage
+            <button type="button" class="btn-close" @onclick="() => statusMessage = null"></button>
+        </div>
+    }
+
+    @if (showUploadPanel)
+    {
+        <div class="card mb-4">
+            <div class="card-header">Upload Document(s)</div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Files (PDF, Office, text, JPEG, PNG — max 25 MB each)</label>
+                    <InputFile @key="inputFileKey" class="form-control" OnChange="OnFilesSelected" multiple accept="@acceptAttribute" />
+                </div>
+
+                @if (selectedFiles.Any())
+                {
+                    <div class="mb-3">
+                        <label class="form-label">Selected files (edit titles as needed)</label>
+                        <table class="table table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th style="width:45%">Title</th>
+                                    <th>File</th>
+                                    <th>Size</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var file in selectedFiles)
+                                {
+                                    <tr>
+                                        <td><input class="form-control form-control-sm" @bind="file.Title" /></td>
+                                        <td>@file.FileName</td>
+                                        <td>@FormatSize(file.Size)</td>
+                                        <td>
+                                            <button class="btn btn-outline-danger btn-sm" @onclick="() => RemoveFile(file)">Remove</button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Category <span class="text-danger">*</span></label>
+                        <select class="form-select" @bind="category">
+                            <option value="">-- Select a category --</option>
+                            @foreach (var c in DocumentCategories.All)
+                            {
+                                <option value="@c">@c</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Project (optional)</label>
+                        <select class="form-select" @bind="projectId">
+                            <option value="">-- None --</option>
+                            @if (projects is not null)
+                            {
+                                @foreach (var p in projects)
+                                {
+                                    <option value="@p.ProjectId">@p.Name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Tags (comma-separated, optional)</label>
+                        <input class="form-control" @bind="tags" placeholder="e.g. budget, q3" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Description (optional)</label>
+                        <textarea class="form-control" rows="2" @bind="description"></textarea>
+                    </div>
+                </div>
+
+                <div class="mt-3 d-flex align-items-center gap-2">
+                    <button class="btn btn-primary" @onclick="UploadAsync" disabled="@(isUploading || !selectedFiles.Any())">
+                        @if (isUploading)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                            <span>Uploading...</span>
+                        }
+                        else
+                        {
+                            <span>Upload</span>
+                        }
+                    </button>
+                    <button class="btn btn-secondary" @onclick="CancelUpload" disabled="@isUploading">Cancel</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (documents is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else if (!documents.Any())
+    {
+        <div class="alert alert-info">You haven't uploaded any documents yet.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Category</th>
+                        <th>Project</th>
+                        <th>Uploaded</th>
+                        <th>Size</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var doc in documents)
+                    {
+                        <tr>
+                            <td>@doc.Title</td>
+                            <td><span class="badge bg-secondary">@doc.Category</span></td>
+                            <td>@(doc.Project?.Name ?? "—")</td>
+                            <td>@doc.UploadedDate.ToString("MMM dd, yyyy HH:mm")</td>
+                            <td>@FormatSize(doc.FileSizeBytes)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private const long MaxFileSize = 26214400; // 25 MB
+    private const int MaxFiles = 10;
+
+    private List<Document>? documents;
+    private List<Project>? projects;
+    private int currentUserId;
+
+    private bool showUploadPanel;
+    private bool isUploading;
+    private Guid inputFileKey = Guid.NewGuid();
+
+    private string acceptAttribute = string.Empty;
+    private HashSet<string> allowedExtensions = new(StringComparer.OrdinalIgnoreCase);
+
+    private readonly List<SelectedFile> selectedFiles = new();
+    private string category = string.Empty;
+    private string? projectIdRaw;
+    private string? tags;
+    private string? description;
+
+    private string? statusMessage;
+    private string statusCss = "alert-info";
+
+    private int? projectId
+    {
+        get => int.TryParse(projectIdRaw, out var id) ? id : null;
+        set => projectIdRaw = value?.ToString();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        allowedExtensions = StorageOptions.Value.AllowedExtensions.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        acceptAttribute = string.Join(",", StorageOptions.Value.AllowedExtensions);
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userIdClaim = authState.User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userIdClaim is not null && int.TryParse(userIdClaim.Value, out var userId))
+        {
+            currentUserId = userId;
+        }
+
+        if (currentUserId > 0)
+        {
+            projects = await ProjectService.GetUserProjectsAsync(currentUserId);
+            await LoadDocumentsAsync();
+        }
+    }
+
+    private async Task LoadDocumentsAsync()
+    {
+        documents = (await DocumentService.GetMyDocumentsAsync(currentUserId, new DocumentListFilter())).ToList();
+    }
+
+    private void ToggleUploadPanel()
+    {
+        statusMessage = null;
+        showUploadPanel = !showUploadPanel;
+    }
+
+    private async Task OnFilesSelected(InputFileChangeEventArgs e)
+    {
+        statusMessage = null;
+        selectedFiles.Clear();
+
+        var rejected = new List<string>();
+
+        foreach (var file in e.GetMultipleFiles(MaxFiles))
+        {
+            // Reject unsupported file types immediately, before reading the file.
+            var extension = Path.GetExtension(file.Name).ToLowerInvariant();
+            if (allowedExtensions.Count > 0 && !allowedExtensions.Contains(extension))
+            {
+                rejected.Add(file.Name);
+                continue;
+            }
+
+            // Copy into a MemoryStream immediately to avoid IBrowserFile disposal issues.
+            var memoryStream = new MemoryStream();
+            try
+            {
+                await using (var stream = file.OpenReadStream(MaxFileSize))
+                {
+                    await stream.CopyToAsync(memoryStream);
+                }
+                memoryStream.Position = 0;
+
+                selectedFiles.Add(new SelectedFile
+                {
+                    FileName = file.Name,
+                    ContentType = file.ContentType,
+                    Size = file.Size,
+                    Title = Path.GetFileNameWithoutExtension(file.Name),
+                    Content = memoryStream
+                });
+            }
+            catch (Exception ex)
+            {
+                await memoryStream.DisposeAsync();
+                rejected.Add($"{file.Name} ({ex.Message})");
+            }
+        }
+
+        if (rejected.Any())
+        {
+            var allowedDisplay = string.Join(", ", StorageOptions.Value.AllowedExtensions);
+            SetStatus($"Unsupported or unreadable file(s) skipped: {string.Join(", ", rejected)}. Allowed types: {allowedDisplay}.", false);
+        }
+
+        // Reset the input element so the same file(s) can be re-selected if needed.
+        inputFileKey = Guid.NewGuid();
+    }
+
+    private void RemoveFile(SelectedFile file)
+    {
+        file.Content.Dispose();
+        selectedFiles.Remove(file);
+    }
+
+    private async Task UploadAsync()
+    {
+        if (string.IsNullOrWhiteSpace(category))
+        {
+            SetStatus("Please select a category before uploading.", false);
+            return;
+        }
+
+        isUploading = true;
+        var succeeded = 0;
+        var errors = new List<string>();
+
+        foreach (var file in selectedFiles)
+        {
+            if (file.Content.CanSeek)
+            {
+                file.Content.Position = 0;
+            }
+
+            var request = new DocumentUploadRequest(
+                Title: string.IsNullOrWhiteSpace(file.Title) ? file.FileName : file.Title,
+                Description: description,
+                Category: category,
+                Tags: tags,
+                ProjectId: projectId,
+                TaskId: null,
+                FileName: file.FileName,
+                ContentType: file.ContentType,
+                FileSizeBytes: file.Size,
+                Content: file.Content);
+
+            try
+            {
+                await DocumentService.UploadAsync(request, currentUserId);
+                succeeded++;
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"{file.FileName}: {ex.Message}");
+            }
+        }
+
+        isUploading = false;
+        await LoadDocumentsAsync();
+
+        if (errors.Any())
+        {
+            SetStatus($"{succeeded} uploaded. {errors.Count} failed — {string.Join("; ", errors)}", false);
+        }
+        else
+        {
+            SetStatus($"{succeeded} document(s) uploaded successfully.", true);
+            ResetForm();
+        }
+    }
+
+    private void CancelUpload()
+    {
+        statusMessage = null;
+        ResetForm();
+    }
+
+    private void ResetForm()
+    {
+        foreach (var file in selectedFiles)
+        {
+            file.Content.Dispose();
+        }
+        selectedFiles.Clear();
+        category = string.Empty;
+        projectIdRaw = null;
+        tags = null;
+        description = null;
+        showUploadPanel = false;
+        inputFileKey = Guid.NewGuid();
+    }
+
+    private void SetStatus(string message, bool success)
+    {
+        statusMessage = message;
+        statusCss = success ? "alert-success" : "alert-danger";
+    }
+
+    private static string FormatSize(long bytes)
+    {
+        string[] units = { "B", "KB", "MB", "GB" };
+        double size = bytes;
+        var unit = 0;
+        while (size >= 1024 && unit < units.Length - 1)
+        {
+            size /= 1024;
+            unit++;
+        }
+        return $"{size:0.#} {units[unit]}";
+    }
+
+    private sealed class SelectedFile
+    {
+        public string FileName { get; set; } = string.Empty;
+        public string ContentType { get; set; } = string.Empty;
+        public long Size { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public MemoryStream Content { get; set; } = new();
+    }
+}

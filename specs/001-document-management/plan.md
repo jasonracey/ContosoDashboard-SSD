@@ -89,7 +89,7 @@ ContosoDashboard/
 ├── Controllers/
 │   └── DocumentsController.cs      # NEW — authorized download/preview endpoints (serve files outside wwwroot)
 ├── Pages/
-│   ├── Documents.razor             # NEW — My Documents list, upload modal, edit/delete/share
+│   ├── Documents.razor             # NEW — My Documents list, upload modal (file picker filtered to supported types + selection-time validation), edit/delete/share
 │   ├── SharedWithMe.razor          # NEW — documents shared with the current user
 │   ├── ProjectDetails.razor        # MODIFIED — project documents tab
 │   ├── Tasks.razor                 # MODIFIED — attach/upload documents from a task

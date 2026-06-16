@@ -1,0 +1,248 @@
+SWITCH ENVIRONMENT
+
+https://rc.engagehub.microsoft.com/
+ctrl-shift-alt-d
+
+===========================================
+
+Call AMS from Postman:
+
+You have to be connected to Azure VPN and have a valid token. To get a token:
+az account get-access-token --resource api://api.dev.ams.ame.gbl
+
+If your refresh token expired, then try:
+az login --scope api://api.dev.ams.ame.gbl/.default
+
+Base URL:
+https://sf-eh-cs-dev-eus.eastus.cloudapp.azure.com:444/ams/api/v1/
+
+===========================================
+
+MCA UAT AGREEMENT
+
+128471760
+ba: da41a05-16a5-5470-b96b-b2a0d51f496d
+agr title: MCA_Test Billing Account Name
+
+128471762
+pck title: Ent Supt Lmtd Release NC-EG
+bg: dZY3-WRSS-BG7-TGB
+bg: dZY3-WRSS-BG7-TGB-2
+
+billing-account~da41a05-16a5-5470-b96b-b2a0d51f496d
+billing-group~dzy3-wrss-bg7-tgb
+billing-group~dzy3-wrss-bg7-tgb-
+
+{
+
+  "eventCode": 1000,
+  "agreementUniqueId": "128471760",
+  "amsTestEvent": false
+}
+
+cxp.eh.prov.provisioning.agreementId
+128471760
+
+========================================
+
+MCA UAT AGREEMENT
+
+agreement: 128471788
+base package: 128471790
+bg1: fZY3-WRSS-BG7-TGB-2
+bg2: fZY3-WRSS-BG7-TGB-3
+
+========================================
+
+MCA PROD AGREEMENT
+
+agreement: 181256122
+end date: 2024-03-31 (expired now)
+ba: d5a41a05-16a5-5470-b96b-b2a0d51f496d:a268d2c0-badb-4b25-8f92-9732d303b459_2019-05-31
+
+base package: 181265137
+bg: J4HV-CY2I-BG7-TGB
+bg: 3RCG-EDN6-BG7-TGB
+
+{
+    "uniqueId": "181256122",
+    "amsAgreementType": "MCA",
+    "title": "MCA_",
+    "amsBillingAccountId": "d5a41a05-16a5-5470-b96b-b2a0d51f496d:a268d2c0-badb-4b25-8f92-9732d303b459_2019-05-31",
+    "soldToCustomer": {
+        "Name": "Test_Test_AAD_01-14-13-11-41",
+        "Tpid": 18415246
+    },
+}
+
+Create customer contact:
+
+{
+    "firstName": "Charles",
+    "lastName": "Scantlin",
+    "email": "cscantli@TesttestACUSES111.onmicrosoft.com",
+    "phone": "2223334444",
+    "extension": "12",
+    "altPhone": "551",
+    "altPhoneExt": "51251",
+    "fax": "55885",
+    "faxExt": "855858",
+    "role": "Additional CSM",
+    "salutation": "Mr",
+    "billLanguage": "English",
+    "billingLanguageISOCode": "EN",
+    "regionId": 1,
+    "contactAccessId": {
+        "allowNewContacts": true,
+        "defaultContactForAccessId": true,
+        "accessIdCreationType": 1
+    },
+    "sites": [{
+        "role": "IT Professional",
+        "siteId": "30874428",
+        "status": "Active",
+        "isPrimarySite": true
+    }],
+    "lastModifiedBy": "jracey"
+}
+
+EXPIRED AGREEMENTS:
+
+========================================
+
+DN UAT AGREEMENT 1 - EXPIRED
+
+agreement: 130605501
+base package: 130605503
+
+{
+  "eventCode": 1000,
+  "agreementUniqueId": "130605501",
+  "amsTestEvent": false
+}
+
+========================================
+
+DN UAT AGREEMENT 2 - EXPIRED
+
+agreement: 130796471
+base package: 130796473
+
+========================================
+
+DN UAT AGREEMENT 3 - EXPIRED
+
+agreement: 130791583
+base package: 130791585
+
+========================================
+
+DN UAT AGREEMENT 4 - EXPIRED
+
+agreement: 130850639
+base package: 130850641
+stcn: GIANT EAGLE INC
+space: agreements~d8e68db9-8ff1-580f-b770-9a68cde2701f
+
+{
+  "eventCode": 1000,
+  "agreementUniqueId": "130850639",
+  "amsTestEvent": false
+}
+
+========================================
+
+DN UAT AGREEMENT 5 - INVALID ID
+
+agreement: 131062491
+base: 131062489
+
+{
+  "eventCode": 1000,
+  "agreementUniqueId": "131062489",
+  "amsTestEvent": false
+}
+
+========================================
+
+DN PROD AGREEMENT 1 - EXPIRED
+
+agreement: 184196073
+base: 184195058
+
+========================================
+
+Premier DEV AGREEMENT 1 - EXPIRED
+
+space name: Classic-Premier Foundation-2024-25
+space id: agreements~9eeb05c4-0bfb-5e01-8dda-091ef63776cc
+United Stationers Technology Services LLC 
+agreement: 129651490
+package: 129651491
+
+{
+  "eventCode": 1000,
+  "agreementUniqueId": "129651490"
+}
+
+
+ACTIVE AGREEMENTS:
+
+========================================
+
+M-Y DN UAT AGREEMENT
+
+agreement: 134857537
+space name: STANFORD UNIVERSITY
+title: UNIFIED DN TESTING
+24-25 base package: 134857539
+package title: Digital Natives Premium - 2024-25
+{
+  "eventCode": 1000,
+  "agreementUniqueId": "134857537",
+  "amsTestEvent": false
+}
+
+========================================
+
+Unified UAT AGREEMENT 1 - EXPIRES 6/7
+
+space name: Unified Enterprise Support-2024-25
+space id: agreements~24a2aea1-e008-5d58-b574-7e8a2bb6ad8d
+agreement: 131587471
+base: 131587472
+
+{
+  "eventCode": 1000,
+  "agreementUniqueId": "131587471"
+}
+
+========================================
+
+???
+
+agreement: ???
+space name: ASD Services 1
+https://engagehub.microsoft.com/?feature.SelectedEnvironment=Pre-Production#view/Microsoft_AzureCXP_EngageHub/EngageHubMenuBlade/~/home/engagehubScope/agreements%2F7143d768-a5b6-59d6-b791-3e77c8f47b31
+
+========================================
+
+DN DEV/PPE Agreement for Learning
+137621471
+expires: 2050-12-31
+space name: Learning Digital Natives
+
+========================================
+
+DN PROD Agreement for Learning
+191732030
+expires: 2050-05-11
+space name: Learning Digital Natives
+
+========================================
+
+UESPKGZW3NZD-17 | Unified Enterprise Support
+UESPKGZW3USD-01
+UESMIPRECUSD-01
+UESHRSZV5USD-01
+UESHRSZV6USD-01
