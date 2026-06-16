@@ -5,6 +5,16 @@
 **Status**: Draft  
 **Input**: User description: "Document upload and management capabilities for ContosoDashboard — enable employees to upload, organize, share, and manage work-related documents by category and project, with role-based permissions, offline local storage, search, preview, and integration with existing tasks, dashboard, and notifications."
 
+## Clarifications
+
+### Session 2026-06-16
+
+- Q: How should virus/malware scanning (FR-008) be satisfied given the offline-first, no-external-service constitution? → A: Pluggable scan interface with a simulated/stub scanner offline; real scanner swappable for production (no external dependency in training).
+- Q: How is metadata handled when several files are uploaded at once (FR-001 vs FR-005)? → A: One document per file; title auto-defaults to the filename (editable), and shared category/project/tags apply to the whole batch.
+- Q: When a document is shared with a team, is access fixed to members at share time or does it follow team membership? → A: Dynamic — access follows team membership; current and future members can access, and removed members lose access.
+- Q: Does search cover only the user's own uploads or everything they can access (FR-014 vs FR-018)? → A: Search spans all documents the user is permitted to access (own uploads + project documents + shared-with-me), permission-scoped.
+- Q: How do elevated roles (Team Leads, Project Managers, Administrators) browse others' documents they are entitled to see? → A: No new browse screens this release; they reach others' documents via existing project document views and permission-scoped search (admins also use audit reports).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Upload and Organize Documents (Priority: P1)
@@ -21,6 +31,7 @@ An employee uploads a work document, gives it a title and category, optionally a
 2. **Given** an upload in progress, **When** the file is transferring, **Then** the user sees a progress indicator and, on completion, a clear success or error message.
 3. **Given** a user selects a file that is too large or of an unsupported type, **When** they attempt to upload, **Then** the system rejects it with a clear, specific error message and does not store the file.
 4. **Given** a user is uploading a document, **When** they associate it with a project they are a member of and add custom tags, **Then** the document is linked to that project and the tags are saved for later search.
+5. **Given** a user selects multiple supported files in a single upload, **When** they choose a shared category, project, and tags and submit, **Then** each file becomes its own document with its title defaulted to the filename and the shared category, project, and tags applied to all of them.
 
 ---
 
@@ -108,17 +119,17 @@ Documents connect to existing workflows: users attach and upload documents from 
 
 **Upload & Metadata**
 
-- **FR-001**: Users MUST be able to select and upload one or more files from their computer.
+- **FR-001**: Users MUST be able to select and upload one or more files from their computer. When multiple files are selected in a single upload, each file MUST become its own document.
 - **FR-002**: System MUST accept only the following file types: PDF, Microsoft Word, Excel, PowerPoint, plain text, JPEG, and PNG.
 - **FR-003**: System MUST reject any file larger than 25 MB per file with a clear error message.
 - **FR-004**: System MUST display an upload progress indicator and a success or error message on completion.
-- **FR-005**: Users MUST provide a document title (required) and category (required, chosen from: Project Documents, Team Resources, Personal Files, Reports, Presentations, Other) when uploading.
+- **FR-005**: Users MUST provide a document title (required) and category (required, chosen from: Project Documents, Team Resources, Personal Files, Reports, Presentations, Other) when uploading. For a multi-file upload, each document's title MUST default to its filename (editable), while the chosen category, associated project, and tags apply to every document in the batch.
 - **FR-006**: Users MUST be able to optionally add a description, associate the document with a project, and add custom tags.
 - **FR-007**: System MUST automatically capture and store upload date/time, uploader name, file size, and file type for each document.
 
 **Validation & Security**
 
-- **FR-008**: System MUST scan every uploaded file for viruses and malware before storing it, and MUST reject files that fail the scan without retaining them.
+- **FR-008**: System MUST route every uploaded file through a malware-scanning abstraction before storing it, and MUST reject files that fail the scan without retaining them. In the offline training environment this abstraction MUST use a simulated/stub scanner (no external dependency); the implementation MUST be swappable for a real scanner in production without changing the upload workflow, business logic, or stored metadata structure.
 - **FR-009**: System MUST store uploaded files securely so they are not directly accessible without an authorization check.
 - **FR-010**: System MUST enforce authorization on every document access, download, preview, edit, delete, and share action so users can only act on documents they are permitted to access.
 - **FR-011**: System MUST ensure each stored file has a unique storage identity so uploads cannot collide with or overwrite one another.
@@ -131,7 +142,7 @@ Documents connect to existing workflows: users attach and upload documents from 
 - **FR-015**: Users MUST be able to sort their document list by title, upload date, category, or file size.
 - **FR-016**: Users MUST be able to filter their document list by category, associated project, and date range.
 - **FR-017**: Users MUST be able to view all documents associated with a specific project, and all members of that project MUST be able to view and download those documents.
-- **FR-018**: Users MUST be able to search documents by title, description, tags, uploader name, and associated project, with results limited to documents they are permitted to access.
+- **FR-018**: Users MUST be able to search documents by title, description, tags, uploader name, and associated project. Search MUST span all documents the user is permitted to access (their own uploads, documents of projects they belong to, and documents shared with them), and MUST exclude any document the user has no permission to access.
 
 **Access & Lifecycle**
 
@@ -144,7 +155,7 @@ Documents connect to existing workflows: users attach and upload documents from 
 
 **Sharing**
 
-- **FR-025**: Document owners MUST be able to share a document with specific users or teams.
+- **FR-025**: Document owners MUST be able to share a document with specific users or teams. When shared with a team, access MUST follow the team's membership over time — current and future members gain access, and members removed from the team lose access.
 - **FR-026**: Recipients of a shared document MUST receive an in-app notification and MUST see the document in a "Shared with Me" section.
 - **FR-027**: Shared documents MUST NOT be visible to users who are not recipients and have no other access right.
 
@@ -156,7 +167,7 @@ Documents connect to existing workflows: users attach and upload documents from 
 
 **Permissions (role-based)**
 
-- **FR-031**: System MUST grant document access according to existing roles: Employees (own documents and assigned-project documents), Team Leads (their team members' documents), Project Managers (all documents in their projects), and Administrators (all documents for audit and compliance).
+- **FR-031**: System MUST grant document access according to existing roles: Employees (own documents and assigned-project documents), Team Leads (their team members' documents), Project Managers (all documents in their projects), and Administrators (all documents for audit and compliance). This release MUST NOT add dedicated per-role browse screens; elevated roles reach documents they are entitled to see through the existing project document views and permission-scoped search, and Administrators additionally through audit reports.
 
 **Reporting & Audit**
 
