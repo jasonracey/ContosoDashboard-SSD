@@ -269,7 +269,7 @@
     private DateTime? fromDate;
     private DateTime? toDate;
     private string sortBy = "uploadDate";
-    private string sortOrder = "desc";
+    private string sortOrder = "asc";
     private bool sortDescending => sortOrder == "desc";
 
     private readonly string todayString = DateTime.Today.ToString("yyyy-MM-dd");
@@ -361,7 +361,7 @@
         fromDate = null;
         toDate = null;
         sortBy = "uploadDate";
-        sortOrder = "desc";
+        sortOrder = "asc";
         await LoadDocumentsAsync();
     }
 

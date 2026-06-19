@@ -85,7 +85,7 @@ Data, Pages, Shared, Controllers). File bytes are stored at runtime under `AppDa
 - [X] T020 [US2] Extend `DocumentService.GetMyDocumentsAsync` to apply `DocumentListFilter` sorting (title, upload date, category, file size) and filtering (category, project, date range) in `ContosoDashboard/Services/DocumentService.cs`
 - [X] T021 [US2] Implement `DocumentService.SearchAsync` over the permission-scoped accessible set, matching title, description, tags, uploader name, and project, in `ContosoDashboard/Services/DocumentService.cs`
 - [X] T022 [US2] Implement `DocumentService.GetProjectDocumentsAsync` (project members may view/download project documents) in `ContosoDashboard/Services/DocumentService.cs`
-- [X] T023 [US2] Add sort controls (including an ascending/descending order selector that lists Ascending before Descending), filter controls (category/project/date range, with the upload-date filter prevented from selecting future dates), and a search box wired to the service in `ContosoDashboard/Pages/Documents.razor`
+- [X] T023 [US2] Add sort controls (including an ascending/descending order selector that lists Ascending before Descending and defaults to Ascending), filter controls (category/project/date range, with the upload-date filter prevented from selecting future dates), and a search box wired to the service in `ContosoDashboard/Pages/Documents.razor`
 
 **Checkpoint**: Users can reliably find documents; US1 and US2 both work independently
 
